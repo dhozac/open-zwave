@@ -34,6 +34,8 @@
 #include "Notification.h"
 #include "platform/Log.h"
 
+#include "value_classes/ValueByte.h"
+
 using namespace OpenZWave;
 
 enum SceneActivationCmd
@@ -70,6 +72,31 @@ bool SceneActivation::HandleMsg
 		notification->SetHomeAndNodeIds( GetHomeId(), GetNodeId() );
 		notification->SetSceneId( _data[1] );
 		GetDriver()->QueueNotification( notification );
+		return true;
+	}
+
+	return false;
+}
+
+bool SceneActivation::SetValue
+(
+	Value const& _value
+)
+{
+	if( ValueID::ValueType_Byte == _value.GetID().GetType() )
+	{
+		ValueByte const* value = static_cast<ValueByte const*>(&_value);
+
+		Log::Write( LogLevel_Info, GetNodeId(), "SceneActivation::Set - Setting node %d to scene %d", GetNodeId(), value->GetValue() );
+		Msg* msg = new Msg( "SceneActivation_Set", GetNodeId(), REQUEST, FUNC_ID_ZW_SEND_DATA, true );
+		msg->SetInstance( this, _value.GetID().GetInstance() );
+		msg->Append( GetNodeId() );
+		msg->Append( 3 );
+		msg->Append( GetCommandClassId() );
+		msg->Append( SceneActivationCmd_Set );
+		msg->Append( value->GetValue() );
+		msg->Append( GetDriver()->GetTransmitOptions() );
+		GetDriver()->SendMsg( msg, Driver::MsgQueue_Send );
 		return true;
 	}
 
