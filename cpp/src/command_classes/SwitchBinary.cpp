@@ -35,6 +35,7 @@
 #include "platform/Log.h"
 
 #include "value_classes/ValueBool.h"
+#include "value_classes/ValueShort.h"
 
 using namespace OpenZWave;
 
@@ -140,6 +141,22 @@ bool SwitchBinary::SetValue
 		msg->Append( GetCommandClassId() );
 		msg->Append( SwitchBinaryCmd_Set );
 		msg->Append( value->GetValue() ? 0xff : 0x00 );
+		msg->Append( GetDriver()->GetTransmitOptions() );
+		GetDriver()->SendMsg( msg, Driver::MsgQueue_Send );
+		return true;
+	}
+	else if( ValueID::ValueType_Short == _value.GetID().GetType() )
+	{
+		ValueShort const* value = static_cast<ValueShort const*>(&_value);
+
+		Log::Write( LogLevel_Info, GetNodeId(), "SwitchBinary::Set - Setting node %d to %d", GetNodeId(), value->GetValue());
+		Msg* msg = new Msg( "SwitchBinaryCmd_Set", GetNodeId(), REQUEST, FUNC_ID_ZW_SEND_DATA, true );
+		msg->SetInstance( this, _value.GetID().GetInstance() );
+		msg->Append( GetNodeId() );
+		msg->Append( 4 );
+		msg->Append( GetCommandClassId() );
+		msg->Append( SwitchBinaryCmd_Set );
+		msg->Append( value->GetValue() );
 		msg->Append( GetDriver()->GetTransmitOptions() );
 		GetDriver()->SendMsg( msg, Driver::MsgQueue_Send );
 		return true;
